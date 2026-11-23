@@ -1,0 +1,253 @@
+#include "NXT++.h"
+#include <iostream>
+#include <conio.h>
+using namespace std;
+using namespace NXT;
+
+Comm::NXTComm comm;
+
+//PRZED UŻYCIEM SPRZETU DOKŁADNIE SPRAWDZAMY: 
+//DO KTÓRYCH PORTÓW WEJŚCIOWYCH (IN) PODŁĄCZONE SĄ SENSORY,\
+//DO KTÓRYCH PORTÓW WYJŚCIOWYCH (OUT) PODŁĄCZONE SĄ SERVO-MOTORY,
+//STARAMY SIĘ PISAC KOD Z MOŻLIWOŚCIĄ ZATRZYMANIA ROBOTA W KAŻDEJ CHWILI,
+//ROBOT POWIENIEN BYC PRZEMIESZCZONY W MIEJSCE TESTÓW ZA POŚREDNICTWEM ZDALNEGO STEROWANIA,
+//CZUJNIKI SA INICJOWANE PRZED PETLA NIESKONCZONA,
+//CZUJNIKI SA DEAKTYWOWANE ZA PETLA NIESKONCZONA, LUB PO KOMENDZIE k,
+
+
+void foward(int speed) {
+	NXT::Motor::SetForward(&comm, OUT_B, speed);
+	NXT::Motor::SetForward(&comm, OUT_C, speed);
+}
+
+void backward(int speed) {
+	NXT::Motor::SetReverse(&comm, OUT_B, speed);
+	NXT::Motor::SetReverse(&comm, OUT_C, speed);
+}
+
+void left(int speed) {
+	NXT::Motor::SetReverse(&comm, OUT_B, speed);
+	NXT::Motor::SetForward(&comm, OUT_C, speed);
+}
+
+void right(int speed) {
+	NXT::Motor::SetForward(&comm, OUT_B, speed);
+	NXT::Motor::SetReverse(&comm, OUT_C, speed);
+}
+
+void stop() {
+	NXT::Motor::SetForward(&comm, OUT_B, 0);
+	NXT::Motor::SetForward(&comm, OUT_C, 0);
+}
+
+void avoid() {
+	stop();
+
+	backward(30);
+	stop();
+
+	right(30);
+	Wait(300);
+
+	stop();
+}
+
+void agressive()
+{
+	int light = NXT::Sensor::GetValue(&comm, IN_3);
+	int distance = NXT::Sensor::GetSonarValue(&comm, IN_4);
+
+	if (light > 45) {
+		avoid();
+	}
+	else if (distance <= 40 && distance > 0) {
+		foward(40);
+	}
+	else {
+		foward(20);
+		stop();
+		left(20);
+	}
+
+}
+
+void defensive()
+{
+	int light = NXT::Sensor::GetValue(&comm, IN_3);
+	int distance = NXT::Sensor::GetSonarValue(&comm, IN_4);
+
+	if (light > 45) {
+		avoid();
+	}
+	else if (distance <= 25 && distance > 0) {
+		left(30);
+		stop();
+
+		foward(30);
+		stop();
+
+		right(50);
+		stop();
+
+		foward(30);
+		stop();
+
+	}
+	else {
+		foward(20);
+		stop();
+		left(20);
+	}
+
+}
+
+int main()
+{
+	srand(time(NULL));
+
+	cout << "Szukanie sygnalu... to moze zajac chwile.\n";
+	if (NXT::OpenBT(&comm)) //initialize the NXT and continue if it succeeds
+	{
+		cout << "Sygnal znaleziony!";
+		cout << "\nPoziom baterii = " << NXT::BatteryLevel(&comm);
+		cout << "\nDostepna pamiec flash = " << NXT::GetAvailableFlash(&comm);
+
+		int x = 30;//szybkość jazdy w przód i tył
+		int xtemp = 30;//potrzebna do sprawdzania czy predkosc sie zmienila
+
+		int y = 20;//szybkość obrotu w lewo, prawo
+		int ytemp = 20;//potrzebna do sprawdzania czy predkosc sie zmienila
+
+		char last_value;//zapamietana ostatnia instrukcja sterująca
+
+		//Przed uzyciem sprawdzamy numer portu do którego jest podlączony sensor, 
+		//NXT::Sensor::SetTouch(&comm, IN_1);//inicjacja sensora dotyku
+
+		//aktywacja czujnika koloru
+		//NXT::Sensor::SetColor(&comm, IN_2, 'n');
+		//int color;
+
+		//aktywacja sonaru,
+		//NXT::Sensor::SetSonar(&comm, IN_1);
+
+		NXT::Sensor::SetLight(&comm, IN_3, 1);
+		NXT::Sensor::SetSonar(&comm, IN_4);
+
+		//początek programu
+		NXT::StartProgram(&comm, "program1");
+
+		//zmienna używana do sterowania
+		char mode = 'a';
+		char decyzja;
+
+		cout << "\n ___Podstawowe sterowanie do uzupelnienia___";
+		cout << "\n A - agresywny";
+		cout << "\n D - defensywny";
+		cout << "\n H - Zatrzymanie silnikow";
+		cout << "\nK - Koniec Programu";
+
+		
+		
+		do
+		{
+			//Przed uzyciem sprawdzamy numer portu do którego jest podlączony sensor, 
+		/*
+		if(NXT::Sensor::GetValue(&comm, IN_1)==1)
+			{
+			for(int i=1;i<1000;i=i+10)
+				{
+				NXT::PlayTone(&comm, i, 1);
+				Wait(1);
+				}
+			}
+		*/
+
+			if (kbhit() == true)
+			{
+
+				decyzja = getch();
+
+
+				//Przed uzyciem serwo sprawdzamy numer portu do którego jest podlączony,
+				if (decyzja == 'A' || decyzja == 'a' || (ytemp != y && last_value == 'a'))
+				{
+					mode = 'a';
+					stop();
+
+					//cout<<"SonarValue = "<<NXT::Sensor::GetSonarValue(&comm, IN_4);
+				}
+
+				//Przed uzyciem serwo sprawdzamy numer portu do którego jest podlączony,
+				if (decyzja == 'D' || decyzja == 'd' || (ytemp != y && last_value == 'd'))
+				{
+					mode = 'd';
+					stop();
+				}
+
+				//Przed uzyciem serwo sprawdzamy numer portu do którego jest podlączony,
+				if (decyzja == 'H' || decyzja == 'h')
+				{
+					NXT::Motor::SetForward(&comm, OUT_B, 0);
+					NXT::Motor::SetForward(&comm, OUT_C, 0);
+					NXT::Motor::Stop(&comm, OUT_B, 0);
+					NXT::Motor::Stop(&comm, OUT_C, 0);
+				}
+
+				//Przed uzyciem serwo sprawdzamy numer portu do którego jest podlączony,
+				if (decyzja == 'K' || decyzja == 'k')
+				{
+					NXT::Motor::Stop(&comm, OUT_B, 0);
+					NXT::Motor::Stop(&comm, OUT_C, 0);
+					NXT::Motor::Stop(&comm, OUT_A, 0);
+		
+					NXT::Sensor::SetLight(&comm, IN_3, 0);
+					NXT::Sensor::SetSonarOff(&comm, IN_4);
+
+					break;
+				}
+
+				if (mode == 'a') {
+					agressive();
+				}
+				else if (mode == 'd') {
+					defensive();
+				}
+
+				Wait(50);
+
+			}
+		} while (decyzja != 'k' && decyzja != 'K');
+
+
+		
+
+		NXT::StopProgram(&comm);
+
+	}
+	NXT::Close(&comm); //close communication with NXT
+
+	cout << "\n\nPress ENTER to close program";
+	getchar();
+
+	return 0;
+}
+
+
+//opcje dotyczace Mindstorm NXT v. 1.0
+
+//if(decyzja=='L' || decyzja=='l')
+// {
+//  NXT::Sensor::SetLight(&comm, IN_3, 1);
+//  Wait(50);
+//  cout<<"LightValue = "<<NXT::Sensor::GetValue(&comm, IN_3);
+//  Wait(50);
+//  NXT::Sensor::SetLight(&comm, IN_3, 0);
+// }
+
+	//if(decyzja=='O' || decyzja=='o')
+// {
+// NXT::Sensor::SetSound(&comm, IN_2);
+// Wait(50);
+// cout<<"SoundValue = "<<NXT::Sensor::GetValue(&comm, IN_2);
+// }
+
