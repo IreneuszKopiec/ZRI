@@ -44,6 +44,7 @@ void avoid() {
 	stop();
 
 	backward(30);
+	Wait(500);
 	stop();
 
 	right(30);
@@ -56,6 +57,13 @@ void agressive()
 {
 	int light = NXT::Sensor::GetValue(&comm, IN_3);
 	int distance = NXT::Sensor::GetSonarValue(&comm, IN_4);
+
+
+
+	std::cout << light << endl;
+	std::cout << distance;
+
+	std::cout << endl << endl;
 
 	if (light > 45) {
 		avoid();
@@ -76,20 +84,29 @@ void defensive()
 	int light = NXT::Sensor::GetValue(&comm, IN_3);
 	int distance = NXT::Sensor::GetSonarValue(&comm, IN_4);
 
+	std::cout << light << endl;
+	std::cout << distance;
+
+	std::cout << endl << endl;
+
 	if (light > 45) {
 		avoid();
 	}
 	else if (distance <= 25 && distance > 0) {
-		left(30);
+		left(40);
+		Wait(500);
 		stop();
 
-		foward(30);
+		foward(40);
+		Wait(500);
 		stop();
 
 		right(50);
+		Wait(500);
 		stop();
 
-		foward(30);
+		foward(40);
+		Wait(500);
 		stop();
 
 	}
@@ -105,12 +122,12 @@ int main()
 {
 	srand(time(NULL));
 
-	cout << "Szukanie sygnalu... to moze zajac chwile.\n";
+	std::cout << "Szukanie sygnalu... to moze zajac chwile.\n";
 	if (NXT::OpenBT(&comm)) //initialize the NXT and continue if it succeeds
 	{
-		cout << "Sygnal znaleziony!";
-		cout << "\nPoziom baterii = " << NXT::BatteryLevel(&comm);
-		cout << "\nDostepna pamiec flash = " << NXT::GetAvailableFlash(&comm);
+		std::cout << "Sygnal znaleziony!";
+		std::cout << "\nPoziom baterii = " << NXT::BatteryLevel(&comm);
+		std::cout << "\nDostepna pamiec flash = " << NXT::GetAvailableFlash(&comm);
 
 		int x = 30;//szybkość jazdy w przód i tył
 		int xtemp = 30;//potrzebna do sprawdzania czy predkosc sie zmienila
@@ -140,11 +157,11 @@ int main()
 		char mode = 'a';
 		char decyzja;
 
-		cout << "\n ___Podstawowe sterowanie do uzupelnienia___";
-		cout << "\n A - agresywny";
-		cout << "\n D - defensywny";
-		cout << "\n H - Zatrzymanie silnikow";
-		cout << "\nK - Koniec Programu";
+		std::cout << "\n ___Podstawowe sterowanie do uzupelnienia___";
+		std::cout << "\n A - agresywny";
+		std::cout << "\n D - defensywny";
+		std::cout << "\n H - Zatrzymanie silnikow";
+		std::cout << "\nK - Koniec Programu";
 
 		
 		
@@ -167,9 +184,17 @@ int main()
 
 				decyzja = getch();
 
+				if (decyzja == 'F' || decyzja == 'f')
+				{
+					mode = 'a';
+					stop();
+
+					//cout<<"SonarValue = "<<NXT::Sensor::GetSonarValue(&comm, IN_4);
+				}
+
 
 				//Przed uzyciem serwo sprawdzamy numer portu do którego jest podlączony,
-				if (decyzja == 'A' || decyzja == 'a' || (ytemp != y && last_value == 'a'))
+				if (decyzja == 'A' || decyzja == 'a')
 				{
 					mode = 'a';
 					stop();
@@ -187,10 +212,9 @@ int main()
 				//Przed uzyciem serwo sprawdzamy numer portu do którego jest podlączony,
 				if (decyzja == 'H' || decyzja == 'h')
 				{
-					NXT::Motor::SetForward(&comm, OUT_B, 0);
-					NXT::Motor::SetForward(&comm, OUT_C, 0);
-					NXT::Motor::Stop(&comm, OUT_B, 0);
-					NXT::Motor::Stop(&comm, OUT_C, 0);
+					mode = 'c';
+					stop();
+					
 				}
 
 				//Przed uzyciem serwo sprawdzamy numer portu do którego jest podlączony,
@@ -199,23 +223,23 @@ int main()
 					NXT::Motor::Stop(&comm, OUT_B, 0);
 					NXT::Motor::Stop(&comm, OUT_C, 0);
 					NXT::Motor::Stop(&comm, OUT_A, 0);
-		
+
 					NXT::Sensor::SetLight(&comm, IN_3, 0);
 					NXT::Sensor::SetSonarOff(&comm, IN_4);
-
 					break;
 				}
 
-				if (mode == 'a') {
-					agressive();
-				}
-				else if (mode == 'd') {
-					defensive();
-				}
-
-				Wait(50);
-
 			}
+
+			if (mode == 'a') {
+				agressive();
+				
+			}
+			else if (mode == 'd') {
+				defensive();
+			}
+
+			Wait(50);
 		} while (decyzja != 'k' && decyzja != 'K');
 
 
@@ -226,7 +250,7 @@ int main()
 	}
 	NXT::Close(&comm); //close communication with NXT
 
-	cout << "\n\nPress ENTER to close program";
+	std::cout << "\n\nPress ENTER to close program";
 	getchar();
 
 	return 0;
