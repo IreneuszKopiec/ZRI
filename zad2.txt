@@ -60,8 +60,8 @@ void agressive()
 
 
 
-	std::cout << light << endl;
-	std::cout << distance;
+	std::cout << "light: " << light << endl;
+	std::cout << "distance: " << distance;
 
 	std::cout << endl << endl;
 
